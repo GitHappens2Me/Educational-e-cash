@@ -52,39 +52,60 @@ def redundancy_check(msg: int) -> bool:
 
 ## Example Usage: 
 
-# Variables:
+# ------ RSA Setup (Signer's Secrets) --------
+# 1. Key Generation (Signer's Private Parameters)
+p, q = 7907, 7919   # Secret primes (normally 2048+ bits in real implementations)
+n = p * q       # Modulus for RSA operations (55)
+phi = (p-1) * (q-1)  # Euler's totient (40) - needed for key generation
+e = 65537  # Public exponent (typically 65537 in practice)
+d = modulo_inverse(e, phi) # Private exponent: e⁻¹ mod phi (27 ≡ 3⁻¹ mod 40)
+# --------------------------------------------
 
 
-# ----- Private to Signer -------
-p, q = 5, 11   # large Primes (typically 2048+ bits)
-n = p * q       # 55 # Used as Modulus
-phi = (p-1) * (q-1)  # Euler's totient function # 40
-e = 3  # Choose e such that e and phi are coprime (no common divisor except 1) (standard: 65537 (Prime) therefor very small change to not be coprime)
-d = 27 # modulo_inverse(e, phi)    # Private signing key , Modular Inverse of e to mod phi
-# -------------------------------
+# ------ Public Key Disclosure ---------------
+# 2. Signer Publishes Verification Key
+e = e           # Public verification exponent
+n = n           # Public modulus
+# --------------------------------------------
 
-# ----- Made public by Signer ---
-e = e           # public exponent (usally 65537)
-n = n        # made public by Signer (n = p*q)
-# -------------------------------
 
-# ----- Private to Provider -----
-r = 4# randomint(1, n-1)  # random Blinding Factor (must be co-prime with n) "Temporary private key"
-msg = 13  # [ < n]                                 (must be co-prime with n)
-# -------------------------------
+# ------ Blind Signature Protocol ------------
+# 3. Provider Prepares Message (Client Side)
+r = 4           # Secret blinding factor (must be coprime with n)
+msg = 123123        # Message to be signed (must be < n and coprime with n)
 
-if(not is_coprime(r,n) or not is_coprime(msg,n)):
-    print("!!!Signature will fail: r and msg must be coprime with n!!!")
 
-# User / Provider:
-blinded = blind_message(msg, r)
+# Check: r and msg must both be coprime with n for math to work
+if not is_coprime(r,n) or not is_coprime(msg,n):
+    print("!!! Signature will fail: r and msg must be coprime with n !!!")
+# --------------------------------------------
 
-# Signer:
-signed = private_sign(blinded)
+# 4. Message Blinding (Client Side)
+#    msg' = (msg * rᵉ) mod n (hides message from signer)
+blinded = blind_message(msg, r)  
 
-unblinded = unblind_signature(signed, r)
-print(private_sign(msg))
 
-check = public_verify(unblinded)
+# 5. Blind Signing (Signer Side)
+#    s' = (msg')ᵈ mod n (signer only sees blinded message)
+signed = private_sign(blinded)  
 
-print(f"{msg=}, {blinded=}, {signed=}, {unblinded=}, {check=}")
+# 6. Signature Unblinding (Client Side)
+#    s = s' * r⁻¹ mod n (removes blinding factor)
+unblinded = unblind_signature(signed, r)  
+
+# 7. Verification Check (Can Be Done by Anyone)
+#    Verifies that sᵉ ≡ msg mod n (using public exponent)
+check = public_verify(unblinded)  
+
+# Direct signing without blinding for comparison
+direct_signature = private_sign(msg)  
+
+print(f"""
+Blind Signature Process:
+{msg=} (original message)
+{blinded=} (blinded message)
+{signed=} (blind-signed message)
+{unblinded=} (unblinded signature)
+{direct_signature=} (direct signature for comparison)
+{check=} (verification result)
+""")
