@@ -1,4 +1,4 @@
-from helper import modulo_inverse, is_coprime
+from helper import modulo_inverse, is_coprime, is_moduloinverse
 from random import randint
 
 ## Toy Example of Blind Signatures as described in "Blind Signatures for untracable Payments" by David Chaum
@@ -39,6 +39,39 @@ def redundancy_check(msg: int) -> bool:
     return True
 
 
+## Check for RSA-constraints
+
+def check_signer_variables(p, q, n, phi, e, d):
+    if(p.bit_length() < 2000 or q.bit_length() < 2000):
+        print("Secret Primes p and q are small")
+
+    if(p*q != n):
+        print("p * q must equal to n")
+        return False
+    
+    if(not is_coprime(e, phi)):
+        print("e must be coprime with phi")
+        return False
+    
+    if(not is_moduloinverse(d, e, mod=phi)):
+        print("d must be a moduloninverse of e mod phi")
+        return False
+    return True
+
+def check_provider_variables(r, msg, n):
+    if(not is_coprime(r, n)):
+        print("r must be coprime with n")
+        return False
+    
+    if(msg >= n):
+        print("msg must be smaller than n")
+        return False
+
+    if(not is_coprime(msg, n)):
+        print("msg must be coprime with n")
+        return False
+    return True
+
 ## Protocol:
 # (1) Provider chooses x at random such that r(x) and forms c(x) and supplies c(x) to the signer
 # (2) Signer signs c(x) by applying s' and returns s'(c(x)) to provider
@@ -54,11 +87,11 @@ def redundancy_check(msg: int) -> bool:
 
 # ------ RSA Setup (Signer's Secrets) --------
 # 1. Key Generation (Signer's Private Parameters)
-p, q = 7907, 7919   # Secret primes (normally 2048+ bits in real implementations)
+p, q = 11, 7   # Secret primes (normally 2048+ bits in real implementations)
 n = p * q       # Modulus for RSA operations (55)
 phi = (p-1) * (q-1)  # Euler's totient (40) - needed for key generation
-e = 65537  # Public exponent (typically 65537 in practice)
-d = modulo_inverse(e, phi) # Private exponent: e⁻¹ mod phi (27 ≡ 3⁻¹ mod 40)
+e = 7  # Public exponent (typically 65537 in practice) coprime with phi
+d = 43# modulo_inverse(e, phi) # Private exponent: e⁻¹ mod phi (27 ≡ 3⁻¹ mod 40)
 # --------------------------------------------
 
 
@@ -71,13 +104,16 @@ n = n           # Public modulus
 
 # ------ Blind Signature Protocol ------------
 # 3. Provider Prepares Message (Client Side)
-r = 4           # Secret blinding factor (must be coprime with n)
-msg = 123123        # Message to be signed (must be < n and coprime with n)
+r = 25           # Secret blinding factor (must be coprime with n)
+msg = 12       # Message to be signed (must be < n and coprime with n)
 
 
-# Check: r and msg must both be coprime with n for math to work
-if not is_coprime(r,n) or not is_coprime(msg,n):
-    print("!!! Signature will fail: r and msg must be coprime with n !!!")
+if(not check_signer_variables(p, q, n, phi, e, d) or not check_provider_variables(r, msg, n)):
+    print("Stopped, due to bad RSA variables")
+    exit()
+
+
+
 # --------------------------------------------
 
 # 4. Message Blinding (Client Side)

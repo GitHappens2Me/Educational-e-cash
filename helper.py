@@ -15,6 +15,10 @@ def modulo_inverse(x, m):
     return a % m
 
 
+def is_moduloinverse(d, e, mod):
+    """Verify if d ≡ e⁻¹ mod (mod)"""
+    return (e * d) % mod == 1
+
 # to generate e so it is coprime to phi
 def coprime(phi):
     """Finds suitable e value coprime with φ(n)"""
