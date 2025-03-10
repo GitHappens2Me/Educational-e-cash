@@ -1,7 +1,7 @@
 from helper import modulo_inverse, is_coprime, is_moduloinverse
 from random import randint
 
-## Toy Example of Blind Signatures as described in "Blind Signatures for untracable Payments" by David Chaum
+## Toy Example of RSA Blind Signatures as described in "Blind Signatures for untracable Payments" by David Chaum
 
 ## Three Functions are necessary: 
 
@@ -105,7 +105,7 @@ n = n           # Public modulus
 # ------ Blind Signature Protocol ------------
 # 3. Provider Prepares Message (Client Side)
 r = 25           # Secret blinding factor (must be coprime with n)
-msg = 12       # Message to be signed (must be < n and coprime with n)
+msg = 13       # Message to be signed (must be < n and coprime with n)
 
 
 if(not check_signer_variables(p, q, n, phi, e, d) or not check_provider_variables(r, msg, n)):
